@@ -27,7 +27,8 @@ class ShadowHandLayer(torch.nn.Module):
 
         urdf_path = os.path.join(self.BASE_DIR, '../assets/shadow_hand_{}.urdf'.format(hand_type))
         self.chain = pk.build_chain_from_urdf(open(urdf_path).read()).to(device=device)
-
+        # print(self.chain)
+        # exit()
         self.joints_lower = self.chain.low
         self.joints_upper = self.chain.high
         self.joints_mean = (self.joints_lower + self.joints_upper) / 2
