@@ -200,15 +200,15 @@ class ShadowHandLayer(torch.nn.Module):
     def get_hand_segment_indices(self):
         hand_segment_indices = {}
         hand_finger_indices = {}
-        segment_start = torch.tensor(0, dtype=torch.long, device=self.device)
-        finger_start = torch.tensor(0, dtype=torch.long, device=self.device)
+        segment_start = 0
+        finger_start = 0
         for link_name in self.order_keys:
-            end = torch.tensor(self.meshes[link_name][0].shape[0], dtype=torch.long, device=self.device) + segment_start
-            hand_segment_indices[link_name] = [segment_start, end]
+            end = segment_start + self.meshes[link_name][0].shape[0]
+            hand_segment_indices[link_name] = torch.arange(segment_start, end)
             if link_name in self.ordered_finger_endeffort:
-                hand_finger_indices[link_name] = [finger_start, end]
-                finger_start = end.clone()
-            segment_start = end.clone()
+                hand_finger_indices[link_name] = torch.arange(finger_start, end)
+                finger_start = end
+            segment_start = end
         return hand_segment_indices, hand_finger_indices
 
     def forward(self, theta):
@@ -223,13 +223,13 @@ class ShadowHandLayer(torch.nn.Module):
         loss_1 = torch.clamp(theta[:, 0] - theta[:, 4], 0, 1) * 10
         loss_2 = torch.clamp(theta[:, 4] + theta[:, 8], 0, 1) * 10
         loss_3 = -torch.clamp(theta[:, 8] - theta[:, 13], -1, 0) * 10
-        loss_4 = torch.abs(theta[:, 12]) * 5
+        loss_4 = torch.abs(theta[:, 12]) * 3
         loss_5 = torch.abs(theta[:, [2, 3, 6, 7, 10, 11,  15, 16]] - self.joints_mean[[2, 3, 6, 7, 10, 11, 15, 16]].unsqueeze(0)).sum(dim=-1) * 2
         return loss_1 + loss_2 + loss_3 + loss_4 + loss_5
 
     def get_init_angle(self):
         init_angle = torch.tensor([-0.15, 0, 0.6, 0, 0, 0, 0.6, 0, -0.15, 0, 0.6, 0, 0, -0.25, 0, 0.6, 0,
-                                        0, 1.2, 0, 0.0, 0], dtype=torch.float, device=self.device)
+                                        -0.6, 1.0, 0, 0.0, 0], dtype=torch.float, device=self.device)
         return init_angle
 
     def get_hand_mesh(self, pose, ret):
